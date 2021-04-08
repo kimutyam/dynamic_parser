@@ -1,0 +1,13 @@
+notebook
+ipython
+jupyter
+pytest
+mypy
+pampy
+PyMonad
+isort
+flake8
+numpy
+pandas
+matplotlib
+pendulum
