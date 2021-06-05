@@ -1,18 +1,23 @@
 from abc import ABC
 from dataclasses import dataclass
 from types import TracebackType
-from typing import Optional, TypeVar
+from typing import Optional, TypeVar, Type
 
 from pymonad.either import Either
+
+A = TypeVar("A", bound='ConvertError')
+T = TypeVar("T")
 
 
 @dataclass(frozen=True)
 class ConvertError(ABC):
     """Convert Error"""
+    message: str
+    tb: Optional[TracebackType]
 
-    # message: str
-    # tb: Optional[TracebackType]
-    # org_value: str
+    @classmethod
+    def create(cls: Type[A], message: str) -> A:
+        return cls(message, None)
 
 
 class AttributeTypeError(ConvertError):
@@ -23,5 +28,4 @@ class DuplicateAttributeError(ConvertError):
     """Duplicate"""
 
 
-T = TypeVar("T")
 ConvertResult = Either[ConvertError, T]

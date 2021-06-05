@@ -5,3 +5,4 @@ def test_head_option():
     assert head_option({1, 2, 3}) == 1
     assert head_option(frozenset({1, 2, 3})) == 1
     assert head_option([1, 2, 3]) == 1
+

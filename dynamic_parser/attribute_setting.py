@@ -25,7 +25,7 @@ class AttributeSetting(Generic[T]):
 
     def __validate_one_value(self, attribute_values: frozenset[str]) -> ConvertResult[Optional[str]]:
         if len(attribute_values) >= 2:
-            return Left(DuplicateAttributeError())
+            return Left(DuplicateAttributeError.create('Attribute counts two over'))
         else:
             return Right(head_option(attribute_values))
 
@@ -61,24 +61,27 @@ class AttributeSettings:
     boolean_settings: Sequence[AttributeSetting[bool]]
     date_settings: Sequence[AttributeSetting[date]]
 
+    @curry(2)
+    def __to_attributes(
+            self,
+            string_attributes: Sequence[Tuple[AttributeName, str]],
+            number_attributes: Sequence[Tuple[AttributeName, int]],
+            boolean_attributes: Sequence[Tuple[AttributeName, bool]],
+            date_attributes: Sequence[Tuple[AttributeName, date]]
+    ) -> Attributes:
+        return Attributes(
+            string={n: v for n, v in string_attributes},
+            number={n: v for n, v in number_attributes},
+            boolean={n: v for n, v in boolean_attributes},
+            date={n: v for n, v in date_attributes}
+        )
+
     def convert_attribute_map(self, attribute_map: AttributeMap) -> ConvertResult[Attributes]:
         def convert_by(setting: AttributeSetting[T]) -> ConvertResult[Tuple[AttributeName, T]]:
             v = (setting.convert_value(attribute_map),)
             return match(v, None, Right(tuple()), _, v)
 
-        @curry(2)
-        def to_attributes(
-            string_attributes: Sequence[Tuple[AttributeName, str]],
-            number_attributes: Sequence[Tuple[AttributeName, int]],
-            boolean_attributes: Sequence[Tuple[AttributeName, bool]],
-        ) -> Attributes:
-            return Attributes(
-                string={n: v for n, v in string_attributes},
-                number={n: v for n, v in number_attributes},
-                boolean={n: v for n, v in boolean_attributes},
-            )
-
         string_attributes = traverse(self.string_settings, convert_by)
         number_attributes = traverse(self.number_settings, convert_by)
 
-        return Either.apply(to_attributes).to_arguments(string_attributes, number_attributes)
+        return Either.apply(self.__to_attributes).to_arguments(string_attributes, number_attributes)

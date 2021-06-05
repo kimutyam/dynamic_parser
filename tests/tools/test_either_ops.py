@@ -1,6 +1,19 @@
+from dataclasses import dataclass
+from types import TracebackType
+
 from pymonad.either import Left, Right
 
-from dynamic_parser.tools.either_ops import sequence, traverse
+from dynamic_parser.tools.either_ops import sequence, traverse, apply
+
+
+@dataclass(frozen=True)
+class TracebackTypeWrapper:
+    tracebackType: TracebackType
+
+
+def test_apply():
+    result = apply(lambda: 1 / 0, lambda tt: TracebackTypeWrapper(tt))
+    assert result.is_left()
 
 
 def test_sequence_right():
