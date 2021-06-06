@@ -4,10 +4,10 @@ from collections.abc import Callable
 from datetime import date
 from distutils.util import strtobool
 from typing import Generic, TypeVar
-from pymonad.either import Either, Left, Right
-from dynamic_parser.convert_result import AttributeTypeError, ConvertResult
-import sys
 
+from pymonad.either import Either, Left, Right
+
+from dynamic_parser.convert_result import AttributeTypeError, ConvertResult
 
 T = TypeVar("T")
 

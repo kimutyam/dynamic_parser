@@ -9,6 +9,7 @@ from dynamic_parser.attribute_type import (
     NumberAttributeType,
     StringAttributeType
 )
+from dynamic_parser.attributes import Attributes
 from dynamic_parser.convert_result import AttributeTypeError, DuplicateAttributeError
 from either_test_case import EitherTestCase
 
@@ -23,7 +24,7 @@ class AttributeSettingTest(EitherTestCase):
     def test_duplicate_attribute(self):
         attribute_map = {'rank': 'gold', 'ranking': 'silver'}
         result = self.__string_setting.convert_value(attribute_map)
-        EitherTestCase().assert_left_type(result, DuplicateAttributeError)
+        EitherTestCase().assert_left_instance(result, DuplicateAttributeError)
 
     def test_convert(self):
         attribute_map = {'rank': 'gold'}
@@ -59,4 +60,18 @@ class AttributeSettingsTest(EitherTestCase):
         result = self.__settings.convert_attribute_map(
             {'rank': 'gold', 'age': 'not number'}
         )
-        self.assert_left_type(result, AttributeTypeError)
+        self.assert_left_instance(result, AttributeTypeError)
+
+    def test_convert(self):
+        result = self.__settings.convert_attribute_map(
+            {'rank': 'gold', 'age': '100'}
+        )
+        self.assert_right(
+            result,
+            Attributes(
+                string={AttributeName(value='rank'): 'gold'},
+                number={AttributeName(value='age'): 100},
+                boolean={},
+                date={}
+            )
+        )
