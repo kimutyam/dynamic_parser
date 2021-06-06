@@ -16,6 +16,7 @@ from dynamic_parser.tools.either_ops import traverse
 T = TypeVar("T", covariant=True)
 AttributeMap = Mapping[str, str]
 
+# TODO Setをデフォルト空
 
 @dataclass(frozen=True)
 class AttributeSetting(Generic[T]):
@@ -23,7 +24,7 @@ class AttributeSetting(Generic[T]):
     attribute_type: AttributeType[T]
     aliases: Set[AttributeName]
 
-    def __validate_one_value(self, attribute_values: frozenset[str]) -> ConvertResult[Optional[str]]:
+    def __validate_duplicate(self, attribute_values: frozenset[str]) -> ConvertResult[Optional[str]]:
         if len(attribute_values) >= 2:
             return Left(DuplicateAttributeError.create('Attribute counts two over'))
         else:
@@ -42,16 +43,24 @@ class AttributeSetting(Generic[T]):
         else:
             values = values_by_alias
 
-        return self.__validate_one_value(values).map(self.__link_attribute_name)
+        return self.__validate_duplicate(
+            values
+        ).map(
+            self.__link_attribute_name
+        )
 
     @curry(1)
     def __convert(self, linked_value: Optional[Tuple[AttributeName, str]]):
         return match(
-            linked_value, Tuple[AttributeName, str], lambda n, v: (n, self.attribute_type.convert(v)), _, linked_value
+            linked_value,
+            Tuple[AttributeName, str],
+            lambda n, v: self.attribute_type.convert(v).map(lambda converted: (n, converted)),
+            _,
+            Right(linked_value)
         )
 
-    def convert_value(self, attribute_map: AttributeMap) -> Optional[ConvertResult[Tuple[AttributeName, T]]]:
-        return self.__findValue(attribute_map).map(self.__convert)
+    def convert_value(self, attribute_map: AttributeMap) -> ConvertResult[Tuple[AttributeName, T]]:
+        return self.__findValue(attribute_map).bind(self.__convert)
 
 
 @dataclass(frozen=True)
@@ -61,27 +70,35 @@ class AttributeSettings:
     boolean_settings: Sequence[AttributeSetting[bool]]
     date_settings: Sequence[AttributeSetting[date]]
 
-    @curry(2)
-    def __to_attributes(
-            self,
-            string_attributes: Sequence[Tuple[AttributeName, str]],
-            number_attributes: Sequence[Tuple[AttributeName, int]],
-            boolean_attributes: Sequence[Tuple[AttributeName, bool]],
-            date_attributes: Sequence[Tuple[AttributeName, date]]
-    ) -> Attributes:
-        return Attributes(
-            string={n: v for n, v in string_attributes},
-            number={n: v for n, v in number_attributes},
-            boolean={n: v for n, v in boolean_attributes},
-            date={n: v for n, v in date_attributes}
-        )
-
     def convert_attribute_map(self, attribute_map: AttributeMap) -> ConvertResult[Attributes]:
+        @curry(4)
+        def __to_attributes(
+                s: Sequence[Tuple[AttributeName, str]],
+                n: Sequence[Tuple[AttributeName, int]],
+                b: Sequence[Tuple[AttributeName, bool]],
+                d: Sequence[Tuple[AttributeName, date]]
+        ) -> Attributes:
+            return Attributes(
+                string={n: v for n, v in s},
+                number={n: v for n, v in n},
+                boolean={n: v for n, v in b},
+                date={n: v for n, v in d}
+            )
+
         def convert_by(setting: AttributeSetting[T]) -> ConvertResult[Tuple[AttributeName, T]]:
-            v = (setting.convert_value(attribute_map),)
+            v = setting.convert_value(attribute_map)
             return match(v, None, Right(tuple()), _, v)
 
         string_attributes = traverse(self.string_settings, convert_by)
         number_attributes = traverse(self.number_settings, convert_by)
+        bool_attributes = traverse(self.boolean_settings, convert_by)
+        date_attributes = traverse(self.date_settings, convert_by)
 
-        return Either.apply(self.__to_attributes).to_arguments(string_attributes, number_attributes)
+        return Either.apply(
+            __to_attributes
+        ).to_arguments(
+            string_attributes,
+            number_attributes,
+            bool_attributes,
+            date_attributes
+        )

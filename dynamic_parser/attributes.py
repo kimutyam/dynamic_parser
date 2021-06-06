@@ -1,4 +1,4 @@
-from collections import Mapping
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date
 
