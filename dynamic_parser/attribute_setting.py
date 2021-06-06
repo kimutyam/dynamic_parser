@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import date
-from typing import Generic, Mapping, Optional, Sequence, Set, Tuple, TypeVar
+from typing import Generic, Mapping, Optional, Sequence, Tuple, TypeVar
 
 from pampy import _, match
 from pymonad.either import Either, Left, Right
@@ -16,17 +16,17 @@ from dynamic_parser.tools.either_ops import traverse
 T = TypeVar("T", covariant=True)
 AttributeMap = Mapping[str, str]
 
-# TODO Setをデフォルト空
 
 @dataclass(frozen=True)
 class AttributeSetting(Generic[T]):
     name: AttributeName
     attribute_type: AttributeType[T]
-    aliases: Set[AttributeName]
+    aliases: frozenset[AttributeName] = frozenset()
 
     def __validate_duplicate(self, attribute_values: frozenset[str]) -> ConvertResult[Optional[str]]:
-        if len(attribute_values) >= 2:
-            return Left(DuplicateAttributeError.create('Attribute counts two over'))
+        value_count = len(attribute_values)
+        if value_count >= 2:
+            return Left(DuplicateAttributeError.create(f'Attribute counts {value_count}'))
         else:
             return Right(head_option(attribute_values))
 

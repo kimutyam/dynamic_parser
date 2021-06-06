@@ -1,5 +1,3 @@
-from unittest import TestCase
-
 from pymonad.either import Right
 
 from dynamic_parser.attribute_setting import (
@@ -19,7 +17,7 @@ class AttributeSettingTest(EitherTestCase):
     __string_setting = AttributeSetting(
         name=AttributeName('rank'),
         attribute_type=StringAttributeType(),
-        aliases={AttributeName("ranking")}
+        aliases=frozenset({AttributeName("ranking")})
     )
 
     def test_duplicate_attribute(self):
@@ -38,17 +36,16 @@ class AttributeSettingTest(EitherTestCase):
         assert result == Right(None)
 
 
-class AttributeSettingsTest(TestCase):
+class AttributeSettingsTest(EitherTestCase):
     __string_setting = AttributeSetting(
         name=AttributeName('rank'),
         attribute_type=StringAttributeType(),
-        aliases={AttributeName("ranking")}
+        aliases=frozenset({AttributeName("ranking")})
     )
 
     __number_setting = AttributeSetting(
         name=AttributeName('age'),
-        attribute_type=NumberAttributeType(),
-        aliases=set()
+        attribute_type=NumberAttributeType()
     )
 
     __settings = AttributeSettings(
@@ -62,4 +59,4 @@ class AttributeSettingsTest(TestCase):
         result = self.__settings.convert_attribute_map(
             {'rank': 'gold', 'age': 'not number'}
         )
-        EitherTestCase().assert_left_type(result, AttributeTypeError)
+        self.assert_left_type(result, AttributeTypeError)
