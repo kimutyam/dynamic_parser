@@ -55,7 +55,6 @@ def sequence(results: Sequence[ConvertResult[T1]]) -> ConvertResult[Sequence[T1]
     li = list()
     for result in results:
         if isinstance(result, ConvertError):
-            print(type(result))
             return result
         li.append(result)
     return li
